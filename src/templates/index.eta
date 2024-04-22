@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@2.15.1/dist/full.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
+  <script src="https://unpkg.com/htmx.org@1.6.0"></script>
+  <title>CardCtrl</title>
+</head>
+<body>
+  <div class="container mx-auto p-4" x-data="cardCtrl()">
+    <h1 class="text-3xl font-bold mb-4">CardCtrl</h1>
+    <div class="mb-4">
+      <textarea x-model="cardData" class="textarea textarea-bordered w-full" rows="4" readonly></textarea>
+    </div>
+    <div class="mb-4">
+      <button @click="generateCode" class="btn btn-primary">Generate Code</button>
+      <button @click="scanCard" class="btn btn-secondary">Scan Card</button>
+      <button @click="writeCard" class="btn btn-accent">Write Card</button>
+    </div>
+    <div x-show="message" class="alert" :class="{'alert-success': success, 'alert-error': !success}">
+      <div class="flex-1">
+        <label x-text="message"></label>
+      </div>
+    </div>
+  </div>
+  <script>
+    function cardCtrl() {
+      return {
+        cardData: '',
+        message: '',
+        success: true,
+        async generateCode() {
+          try {
+            // TODO: Implement the logic to generate the code (ordinal) and update the cardData
+            this.cardData = 'Generated Code: ' + Math.random().toString(36).substr(2, 8);
+            this.message = 'Code generated successfully';
+            this.success = true;
+          } catch (error) {
+            this.message = 'Error generating code: ' + error.message;
+            this.success = false;
+          }
+        },
+        async scanCard() {
+          try {
+            const ndef = new NDEFReader();
+            await ndef.scan();
+            ndef.onreading = event => {
+              const decoder = new TextDecoder();
+              this.cardData = decoder.decode(event.message.records[0].data);
+              this.playScanTone();
+            };
+            this.message = 'Card scanned successfully';
+            this.success = true;
+          } catch (error) {
+            this.message = 'Error scanning card: ' + error.message;
+            this.success = false;
+          }
+        },
+        async writeCard() {
+          try {
+            const ndef = new NDEFReader();
+            await ndef.write({
+              records: [{ recordType: 'text', data: this.cardData }]
+            });
+            this.message = 'Card written successfully';
+            this.success = true;
+          } catch (error) {
+            this.message = 'Error writing card: ' + error.message;
+            this.success = false;
+          }
+        },
+        playScanTone() {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+
+          oscillator.type = 'sine';
+          oscillator.frequency.value = 1000;
+          gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.5);
+        }
+      };
+    }
+  </script>
+</body>
+</html>
