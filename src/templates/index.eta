@@ -48,12 +48,19 @@
             const ndef = new NDEFReader();
             await ndef.scan();
             ndef.onreading = event => {
-              const decoder = new TextDecoder();
-              this.cardData = decoder.decode(event.message.records[0].data);
+              const record = event.message.records[0];
+              if (record.recordType === 'url') {
+                const url = record.data;
+                window.open(url, '_blank');
+                this.message = 'Card scanned successfully. Opening link: ' + url;
+              } else {
+                const decoder = new TextDecoder();
+                this.cardData = decoder.decode(record.data);
+                this.message = 'Card scanned successfully';
+              }
+              this.success = true;
               this.playScanTone();
             };
-            this.message = 'Card scanned successfully';
-            this.success = true;
           } catch (error) {
             this.message = 'Error scanning card: ' + error.message;
             this.success = false;
@@ -63,7 +70,7 @@
           try {
             const ndef = new NDEFReader();
             await ndef.write({
-              records: [{ recordType: 'text', data: this.cardData }]
+              records: [{ recordType: 'url', data: 'https://fluxbeam.xyz/app/tokens/BWLJsePrMVoHoPZAWJtQjqG7paeGLj7L729hBT49Ti1k' }]
             });
             this.message = 'Card written successfully';
             this.success = true;
