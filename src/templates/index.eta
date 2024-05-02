@@ -70,7 +70,7 @@
           try {
             const ndef = new NDEFReader();
             await ndef.write({
-              records: [{ recordType: 'url', data: 'https://red.viim.dev/kino'}]
+              records: [{ recordType: 'url', data: 'https://red.viim.dev/kИho'}]
             });
             this.message = 'Card written successfully';
             this.success = true;
